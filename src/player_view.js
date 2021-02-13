@@ -68,7 +68,7 @@ module.exports = class PlayerView extends QWidget{
     this.info_layout.addWidget(this.title, 1);
     this.info_layout.addWidget(this.status_icon);
 
-    this.progress.setObjectName('Process');
+    this.progress.setObjectName('Progress');
     this.progress.setLayout(this.progress_layout);
 
     this.progress_layout.setContentsMargins(10,0,10,0);
