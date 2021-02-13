@@ -59,6 +59,8 @@ module.exports = class MainWindow extends QMainWindow{
     this.control_layout.addWidget(this.close);
 
     this.close.setFixedSize(14, 14);
+    this.close.setText('×');
+    this.close.setFlat(true);
 
     this.stack.addWidget(this.player_view);
     this.stack.addWidget(this.playlist_view);
@@ -73,7 +75,6 @@ module.exports = class MainWindow extends QMainWindow{
 
     this.control.addEventListener('MouseMove', function(ev){
         ev = new QMouseEvent(ev);
-        console.log(ev.globalX() - this.mouse_click_x_coordinate, ev.globalY() - this.mouse_click_y_coordinate)
         this.move(ev.globalX() - this.mouse_click_x_coordinate, ev.globalY() - this.mouse_click_y_coordinate);
 
     }.bind(this));
