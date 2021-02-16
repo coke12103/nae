@@ -13,6 +13,7 @@
   "license": "MIT",
   "dependencies": {
     "@nodegui/nodegui": "^0.28.0",
+    "mime-types": "^2.1.28",
     "mplayer": "^2.1.0"
   },
   "devDependencies": {
