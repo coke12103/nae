@@ -173,7 +173,7 @@ module.exports = class PlayerView extends QWidget{
 
           if(
             (fs.statSync(file) && fs.statSync(file).isDirectory()) ||
-            !(mime.lookup && mime.lookup(file).match(/^audio/))
+            !(mime.lookup(file) && mime.lookup(file).match(/^audio/))
           ) continue;
 
           App.playlist.push(file);
