@@ -12,9 +12,13 @@ const {
 const PlayerView = require('./player_view.js');
 const PlaylistView = require('./playlist_view.js');
 
+const ThemeLoader = require('./theme_loader.js');
+
 module.exports = class MainWindow extends QMainWindow{
   constructor(){
     super();
+
+    this.theme = ThemeLoader.load();
 
     this.mouse_click_x_coordinate;
     this.mouse_click_y_coordinate;
@@ -37,6 +41,7 @@ module.exports = class MainWindow extends QMainWindow{
     this.setMinimumSize(300, 150);
     this.setMaximumSize(300, 150);
     this.setWindowFlag(WindowType.FramelessWindowHint, true);
+    this.setStyleSheet(this.theme);
 
     this.setCentralWidget(this.root);
 
