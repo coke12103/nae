@@ -6,8 +6,15 @@ const {
   QSlider,
   QPushButton,
   AlignmentFlag,
-  Orientation
+  Orientation,
+  QFileDialog,
+  FileMode
 } = require('@nodegui/nodegui');
+const mime = require('mime-types');
+const fs = require('fs');
+const path = require('path');
+
+const App = require('./index.js');
 
 module.exports = class PlayerView extends QWidget{
   constructor(){
@@ -149,5 +156,30 @@ module.exports = class PlayerView extends QWidget{
 
     this.vol_icon_2.setObjectName('VolIcon2');
     this.vol_icon_2.setAlignment(AlignmentFlag.AlignCenter);
+
+    this.search.addEventListener('clicked', function(){
+        const dialog = new QFileDialog();
+        dialog.setFileMode(FileMode.Directory);
+        dialog.exec();
+
+        if(dialog.result() != 1) return;
+
+        var dir = dialog.selectedFiles()[0];
+        var files = fs.readdirSync(dir);
+        App.playlist.length = 0;
+
+        for(var file of files){
+          file = path.join(dir, file);
+
+          if(
+            (fs.statSync(file) && fs.statSync(file).isDirectory()) ||
+            !(mime.lookup && mime.lookup(file).match(/^audio/))
+          ) continue;
+
+          App.playlist.push(file);
+        }
+
+        console.log(App.playlist);
+    }.bind(this));
   }
 }
