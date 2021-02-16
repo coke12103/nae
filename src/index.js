@@ -5,6 +5,9 @@ const MainWindow = require('./main_window.js');
 const main_window = new MainWindow();
 const player = new MPlayer();
 
+const playlist = [];
+
+exports.playlist = [];
 exports.player = player;
 
 async function start(){
