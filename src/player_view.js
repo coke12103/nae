@@ -20,7 +20,8 @@ const App = require('./index.js');
 const STATUS = {
   STOP: 0,
   PLAY: 1,
-  PAUSE: 2
+  PAUSE: 2,
+  CHANGE: 3
 };
 
 const ParseTime = function(time){
@@ -199,11 +200,16 @@ module.exports = class PlayerView extends QWidget{
         }
 
         this.title.setText('Ready');
+        console.log(App.playlist);
     }.bind(this));
 
     this.play_button.addEventListener('clicked', function(){
         if(!App.playlist.length <= 0) this.play();
     }.bind(this));
+
+    this.next_button.addEventListener('clicked', function(){
+        this.next();
+    }.bind(this))
 
     this.progress_bar.addEventListener('sliderPressed', function(){
         this.isSlid = true;
@@ -236,21 +242,15 @@ module.exports = class PlayerView extends QWidget{
     }.bind(this));
 
     App.player.on('stop', function(){
+        if(this.status == STATUS.CHANGE || this.status == STATUS.STOP) return;
+
         this.status = STATUS.STOP;
-        App.playlist_index++;
-
-        if(App.playlist_index > App.playlist.length){
-          this.play_button.setText('Play');
-          return;
-        }
-
-        this.play();
+        this.next();
     }.bind(this));
-
   }
 
   play(){
-    if(this.status == STATUS.STOP){
+    if(this.status == STATUS.STOP || this.status == STATUS.CHANGE){
       var media = App.playlist[App.playlist_index];
 
       App.player.openFile(media);
@@ -266,5 +266,24 @@ module.exports = class PlayerView extends QWidget{
       this.status = STATUS.PLAY;
       this.play_button.setText('Pause');
     }
+  }
+
+  next(){
+    this.status = STATUS.CHANGE;
+    App.player.stop();
+
+    App.playlist_index++;
+
+    if(App.playlist_index -1 > App.playlist.length){
+      this.status = STATUS.STOP;
+      this.play_button.setText('Play');
+      App.playlist_index = App.playlist.length;
+      return;
+    }
+
+    // 止まったのを確認した上で発火しないと無限に飛びまくる
+    App.player.once('stop', function(){
+        this.play();
+    }.bind(this));
   }
 }
