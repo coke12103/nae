@@ -8,7 +8,8 @@ const {
   AlignmentFlag,
   Orientation,
   QFileDialog,
-  FileMode
+  FileMode,
+  QMouseEvent
 } = require('@nodegui/nodegui');
 const mime = require('mime-types');
 const fs = require('fs');
@@ -17,7 +18,7 @@ const path = require('path');
 const App = require('./index.js');
 
 const STATUS = {
-  READY: 0,
+  STOP: 0,
   PLAY: 1,
   PAUSE: 2
 };
@@ -35,7 +36,8 @@ module.exports = class PlayerView extends QWidget{
   constructor(){
     super();
 
-    this.status = STATUS.READY;
+    this.status = STATUS.STOP;
+    this.isSlid = false;
 
     this.layout = new QBoxLayout(Direction.TopToBottom);
 
@@ -200,20 +202,42 @@ module.exports = class PlayerView extends QWidget{
     }.bind(this));
 
     this.play_button.addEventListener('clicked', function(){
-        this.play();
+        if(!App.playlist.length <= 0) this.play();
+    }.bind(this));
+
+    this.progress_bar.addEventListener('sliderPressed', function(){
+        this.isSlid = true;
+    }.bind(this))
+
+    this.progress_bar.addEventListener('sliderReleased', function(){
+        if(this.status == STATUS.PLAY || this.status == STATUS.PAUSE) App.player.seek(this.progress_bar.value());
+        this.isSlid = false;
+    }.bind(this));
+
+    this.progress_bar.addEventListener('MouseButtonPress', function(ev){
+        ev = new QMouseEvent(ev);
+        this.progress_bar.setValue((this.progress_bar.maximum() * ev.x()) / this.progress_bar.size().width());
     }.bind(this));
 
     App.player.on('start', async function(){
-        this.end.setText(ParseTime(await App.player.mediaLength()));
+        var len = await App.player.mediaLength();
+
+        this.end.setText(ParseTime(len));
+        this.progress_bar.setRange(0, parseInt(len));
     }.bind(this));
 
     App.player.on('time', function(time){
-        this.current.setText(ParseTime(time));
+        if(this.isSlid){
+          this.current.setText(ParseTime(this.progress_bar.value()));
+        }else{
+          this.current.setText(ParseTime(time));
+          this.progress_bar.setValue(parseInt(time));
+        }
     }.bind(this));
   }
 
   play(){
-    if(this.status == STATUS.READY){
+    if(this.status == STATUS.STOP){
       App.player.openFile(App.playlist[App.playlist_index]);
       this.status = STATUS.PLAY;
       this.play_button.setText('Pause');
