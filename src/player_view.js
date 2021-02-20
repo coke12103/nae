@@ -16,9 +16,17 @@ const path = require('path');
 
 const App = require('./index.js');
 
+const STATUS = {
+  READY: 0,
+  PLAY: 1,
+  PAUSE: 2
+};
+
 module.exports = class PlayerView extends QWidget{
   constructor(){
     super();
+
+    this.status = STATUS.READY;
 
     this.layout = new QBoxLayout(Direction.TopToBottom);
 
@@ -44,11 +52,11 @@ module.exports = class PlayerView extends QWidget{
     this.end = new QLabel();
 
     // control
-    this.search = new QPushButton();
-    this.back = new QPushButton();
-    this.play = new QPushButton();
-    this.next = new QPushButton();
-    this.list = new QPushButton();
+    this.search_button = new QPushButton();
+    this.back_button = new QPushButton();
+    this.play_button = new QPushButton();
+    this.next_button = new QPushButton();
+    this.list_button = new QPushButton();
 
     // vol
     this.vol_icon_1 = new QLabel();
@@ -91,11 +99,11 @@ module.exports = class PlayerView extends QWidget{
     this.control_layout.setContentsMargins(0,0,0,0);
     this.control_layout.setSpacing(5);
 
-    this.control_layout.addWidget(this.search);
-    this.control_layout.addWidget(this.back);
-    this.control_layout.addWidget(this.play);
-    this.control_layout.addWidget(this.next);
-    this.control_layout.addWidget(this.list);
+    this.control_layout.addWidget(this.search_button);
+    this.control_layout.addWidget(this.back_button);
+    this.control_layout.addWidget(this.play_button);
+    this.control_layout.addWidget(this.next_button);
+    this.control_layout.addWidget(this.list_button);
 
     this.vol.setObjectName('Vol');
     this.vol.setLayout(this.vol_layout);
@@ -128,25 +136,25 @@ module.exports = class PlayerView extends QWidget{
     this.end.setWordWrap(false);
     this.end.setText('0:00');
 
-    this.search.setObjectName('Search');
-    this.search.setFlat(true);
-    this.search.setText('Search');
+    this.search_button.setObjectName('SearchButton');
+    this.search_button.setFlat(true);
+    this.search_button.setText('Search');
 
-    this.back.setObjectName('Back');
-    this.back.setFlat(true);
-    this.back.setText('Back');
+    this.back_button.setObjectName('BackButton');
+    this.back_button.setFlat(true);
+    this.back_button.setText('Back');
 
-    this.play.setObjectName('Play');
-    this.play.setFlat(true);
-    this.play.setText('Play');
+    this.play_button.setObjectName('PlayButton');
+    this.play_button.setFlat(true);
+    this.play_button.setText('Play');
 
-    this.next.setObjectName('Next');
-    this.next.setFlat(true);
-    this.next.setText('Next');
+    this.next_button.setObjectName('NextButton');
+    this.next_button.setFlat(true);
+    this.next_button.setText('Next');
 
-    this.list.setObjectName('List');
-    this.list.setFlat(true);
-    this.list.setText('List');
+    this.list_button.setObjectName('ListButton');
+    this.list_button.setFlat(true);
+    this.list_button.setText('List');
 
     this.vol_icon_1.setObjectName('VolIcon1');
     this.vol_icon_1.setAlignment(AlignmentFlag.AlignCenter);
@@ -157,7 +165,7 @@ module.exports = class PlayerView extends QWidget{
     this.vol_icon_2.setObjectName('VolIcon2');
     this.vol_icon_2.setAlignment(AlignmentFlag.AlignCenter);
 
-    this.search.addEventListener('clicked', function(){
+    this.search_button.addEventListener('clicked', function(){
         const dialog = new QFileDialog();
         dialog.setFileMode(FileMode.Directory);
         dialog.exec();
@@ -181,5 +189,25 @@ module.exports = class PlayerView extends QWidget{
 
         console.log(App.playlist);
     }.bind(this));
+
+    this.play_button.addEventListener('clicked', function(){
+        this.play();
+    }.bind(this));
+  }
+
+  play(){
+    if(this.status == STATUS.READY){
+      App.player.openFile(App.playlist[App.playlist_index]);
+      this.status = STATUS.PLAY;
+      this.play_button.setText('Pause');
+    }else if(this.status == STATUS.PLAY){
+      App.player.pause();
+      this.status = STATUS.PAUSE;
+      this.play_button.setText('Play');
+    }else if(this.status == STATUS.PAUSE){
+      App.player.play();
+      this.status = STATUS.PLAY;
+      this.play_button.setText('Pause');
+    }
   }
 }
