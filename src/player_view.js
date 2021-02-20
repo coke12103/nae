@@ -198,7 +198,7 @@ module.exports = class PlayerView extends QWidget{
           App.playlist.push(file);
         }
 
-        console.log(App.playlist);
+        this.title.setText('Ready');
     }.bind(this));
 
     this.play_button.addEventListener('clicked', function(){
@@ -234,11 +234,27 @@ module.exports = class PlayerView extends QWidget{
           this.progress_bar.setValue(parseInt(time));
         }
     }.bind(this));
+
+    App.player.on('stop', function(){
+        this.status = STATUS.STOP;
+        App.playlist_index++;
+
+        if(App.playlist_index > App.playlist.length){
+          this.play_button.setText('Play');
+          return;
+        }
+
+        this.play();
+    }.bind(this));
+
   }
 
   play(){
     if(this.status == STATUS.STOP){
-      App.player.openFile(App.playlist[App.playlist_index]);
+      var media = App.playlist[App.playlist_index];
+
+      App.player.openFile(media);
+      this.title.setText(path.parse(media).name)
       this.status = STATUS.PLAY;
       this.play_button.setText('Pause');
     }else if(this.status == STATUS.PLAY){
