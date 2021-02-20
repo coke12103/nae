@@ -22,6 +22,15 @@ const STATUS = {
   PAUSE: 2
 };
 
+const ParseTime = function(time){
+  var min = parseInt(time / 60);
+  var sec = parseInt(time % 60);
+
+  if(sec < 10) sec = '0' + sec;
+
+  return `${min}:${sec}`;
+}
+
 module.exports = class PlayerView extends QWidget{
   constructor(){
     super();
@@ -192,6 +201,14 @@ module.exports = class PlayerView extends QWidget{
 
     this.play_button.addEventListener('clicked', function(){
         this.play();
+    }.bind(this));
+
+    App.player.on('start', async function(){
+        this.end.setText(ParseTime(await App.player.mediaLength()));
+    }.bind(this));
+
+    App.player.on('time', function(time){
+        this.current.setText(ParseTime(time));
     }.bind(this));
   }
 
