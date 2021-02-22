@@ -15,9 +15,6 @@ const main_window = new MainWindow();
 async function start(){
   main_window.show();
   global.win = main_window;
-
-  player.on('start', console.log.bind(this, 'playback started'));
-  player.on('status', console.log);
 }
 
 start();
