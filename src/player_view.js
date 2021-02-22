@@ -17,6 +17,8 @@ const path = require('path');
 
 const App = require('./index.js');
 
+const Progress = require('./player_view/progress.js');
+
 const STATUS = {
   STOP: 0,
   PLAY: 1,
@@ -29,7 +31,7 @@ const ParseTime = function(time){
   var min = parseInt(time / 60);
   var sec = parseInt(time % 60);
 
-  if(sec < 10) sec = '0' + sec;
+  if(sec < 10) sec = `0${sec}`;
 
   return `${min}:${sec}`;
 }
@@ -46,8 +48,7 @@ module.exports = class PlayerView extends QWidget{
     this.info = new QWidget();
     this.info_layout = new QBoxLayout(Direction.LeftToRight);
 
-    this.progress = new QWidget();
-    this.progress_layout = new QBoxLayout(Direction.LeftToRight);
+    this.progress = new Progress();
 
     this.control = new QWidget();
     this.control_layout = new QBoxLayout(Direction.LeftToRight);
@@ -58,11 +59,6 @@ module.exports = class PlayerView extends QWidget{
     // info
     this.title = new QLabel();
     this.status_icon = new QLabel();
-
-    // progress
-    this.current = new QLabel();
-    this.progress_bar = new QSlider();
-    this.end = new QLabel();
 
     // control
     this.search_button = new QPushButton();
@@ -96,16 +92,6 @@ module.exports = class PlayerView extends QWidget{
     this.info_layout.addWidget(this.title, 1);
     this.info_layout.addWidget(this.status_icon);
 
-    this.progress.setObjectName('Progress');
-    this.progress.setLayout(this.progress_layout);
-
-    this.progress_layout.setContentsMargins(10,0,10,0);
-    this.progress_layout.setSpacing(5);
-
-    this.progress_layout.addWidget(this.current);
-    this.progress_layout.addWidget(this.progress_bar, 1);
-    this.progress_layout.addWidget(this.end);
-
     this.control.setObjectName('PlayerControl');
     this.control.setLayout(this.control_layout);
 
@@ -135,19 +121,6 @@ module.exports = class PlayerView extends QWidget{
 
     this.status_icon.setObjectName('StatusIcon');
     this.status_icon.setAlignment(AlignmentFlag.AlignCenter);
-
-    this.current.setObjectName('Current');
-    this.current.setAlignment(AlignmentFlag.AlignVCenter|AlignmentFlag.AlignRight);
-    this.current.setWordWrap(false);
-    this.current.setText('0:00');
-
-    this.progress_bar.setObjectName('ProgressBar');
-    this.progress_bar.setOrientation(Orientation.Horizontal);
-
-    this.end.setObjectName('End');
-    this.end.setAlignment(AlignmentFlag.AlignVCenter|AlignmentFlag.AlignLeft);
-    this.end.setWordWrap(false);
-    this.end.setText('0:00');
 
     this.search_button.setObjectName('SearchButton');
     this.search_button.setFlat(true);
@@ -216,37 +189,33 @@ module.exports = class PlayerView extends QWidget{
         this.back();
     }.bind(this));
 
-    this.progress_bar.addEventListener('sliderPressed', function(){
+    this.progress.bar.addEventListener('sliderPressed', function(){
         this.isSlid = true;
     }.bind(this));
 
-    this.progress_bar.addEventListener('sliderReleased', function(){
-        if(this.status == STATUS.PLAY || this.status == STATUS.PAUSE) App.player.seek(this.progress_bar.value());
+    this.progress.bar.addEventListener('sliderReleased', function(){
+        if(this.status == STATUS.PLAY || this.status == STATUS.PAUSE) App.player.seek(this.progress.bar.value());
         this.isSlid = false;
-    }.bind(this));
-
-    this.progress_bar.addEventListener('MouseButtonPress', function(ev){
-        ev = new QMouseEvent(ev);
-        this.progress_bar.setValue((this.progress_bar.maximum() * ev.x()) / this.progress_bar.size().width());
     }.bind(this));
 
     App.player.on('start', async function(){
         var len = await App.player.mediaLength();
 
-        this.end.setText(ParseTime(len));
-        this.progress_bar.setRange(0, parseInt(len));
+        this.progress.end.setText(ParseTime(len));
+        this.progress.bar.setRange(0, parseInt(len));
     }.bind(this));
 
     App.player.on('time', function(time){
         if(this.isSlid){
-          this.current.setText(ParseTime(this.progress_bar.value()));
+          this.progress.current.setText(ParseTime(this.progress.bar.value()));
         }else{
-          this.current.setText(ParseTime(time));
-          this.progress_bar.setValue(parseInt(time));
+          this.progress.current.setText(ParseTime(time));
+          this.progress.bar.setValue(parseInt(time));
         }
     }.bind(this));
 
     App.player.on('stop', function(){
+        console.log('stop, status:', this.status);
         if(this.status == STATUS.CHANGE || this.status == STATUS.STOP) return;
         if(this.status == STATUS.END) return;
 
@@ -280,39 +249,45 @@ module.exports = class PlayerView extends QWidget{
   }
 
   next(){
+    var s = this.status;
+
     this.status = STATUS.CHANGE;
-    App.player.stop();
 
-    // 止まったのを確認した上で発火しないと無限に飛びまくる
-    App.player.once('stop', function(){
-        App.playlist_index++;
+    App.playlist_index++;
 
-        if(App.playlist_index >= App.playlist.length){
-          this.status = STATUS.END;
-          this.play_button.setText('Play');
-          this.title.setText('END');
-          this.progress_bar.setValue(0);
-          this.current.setText('0:00');
-          this.end.setText('0:00');
-          App.playlist_index = 0;
-          return;
-        }
+    if(App.playlist_index >= App.playlist.length){
+      this.status = STATUS.END;
+      this.play_button.setText('Play');
+      this.title.setText('END');
+      this.progress.reset();
+      App.playlist_index = 0;
+      return;
+    }
 
-        this.play();
-    }.bind(this));
+    if(s == STATUS.STOP){
+      this.play();
+    }else{
+      // 止まったのを確認した上で発火しないと無限に飛びまくる
+      App.player.once('stop', function(){
+          this.play();
+      }.bind(this));
+
+      App.player.stop();
+    }
   }
 
   back(){
     this.status = STATUS.CHANGE;
-    App.player.stop();
-
-    App.playlist_index--;
-
-    if(App.playlist_index < 0) App.playlist_index = 0;
 
     // 止まったのを確認した上で発火しないと無限に飛びまくる
     App.player.once('stop', function(){
+        App.playlist_index--;
+
+        if(App.playlist_index < 0) App.playlist_index = 0;
+
         this.play();
     }.bind(this));
+
+    App.player.stop();
   }
 }
